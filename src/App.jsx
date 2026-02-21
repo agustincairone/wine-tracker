@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Wine, Star, Trash2, ArrowRightLeft, X, Plus, Filter, Loader2 } from 'lucide-react';
+import { Wine, Star, Trash2, ArrowRightLeft, X, Plus, Filter, ChevronDown, ChevronUp, Search, Loader2 } from 'lucide-react';
 
 const supabaseUrl = 'https://ihnulkaskwluamjsktxm.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlobnVsa2Fza3dsdWFtanNrdHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MDQ2MDgsImV4cCI6MjA4NzI4MDYwOH0.PnN7qvHLxTqwY6Lq64DlfqycUzye74AzAHOh_p3QhyM';
@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export default function App() {
   const [wines, setWines] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ nombre: '', bodega: '', cosecha: '', uva: '' });
+  const [form, setForm] = useState({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
   const [tab, setTab] = useState('lista');
   const [showRating, setShowRating] = useState(false);
   const [pendingWine, setPendingWine] = useState(null);
@@ -18,9 +18,24 @@ export default function App() {
   const [comentario, setComentario] = useState('');
   const [filters, setFilters] = useState({ cosecha: [], bodega: [], uva: [] });
   const [showFilters, setShowFilters] = useState(false);
+  const [searchLista, setSearchLista] = useState('');
+  const [searchProbados, setSearchProbados] = useState('');
 
   const cosechas = Array.from({ length: 30 }, (_, i) => String(2025 - i));
   const uvas = ['Malbec', 'Cabernet Sauvignon', 'Merlot', 'Pinot Noir', 'Syrah/Shiraz', 'Tempranillo', 'Bonarda', 'Tannat', 'Carménère', 'Petit Verdot', 'Cabernet Franc', 'Sangiovese', 'Nebbiolo', 'Barbera', 'Grenache/Garnacha', 'Mourvèdre', 'Zinfandel', 'Primitivo', 'Montepulciano', 'Mencia', 'Graciano', 'Monastrell', 'Carignan', 'Corvina', "Nero d'Avola", 'Aglianico', 'Dolcetto', 'Gamay', 'Pinotage', 'Touriga Nacional', 'Tinta Roriz', 'Criolla', 'Lambrusco', 'Zweigelt', 'Blaufränkisch', 'St. Laurent', 'Dornfelder', 'Chardonnay', 'Sauvignon Blanc', 'Torrontés', 'Riesling', 'Viognier', 'Pinot Grigio/Gris', 'Gewürztraminer', 'Semillón', 'Moscatel/Muscat', 'Chenin Blanc', 'Albariño', 'Verdejo', 'Godello', 'Grüner Veltliner', 'Vermentino', 'Fiano', 'Greco', 'Garganega', 'Trebbiano', 'Marsanne', 'Roussanne', 'Müller-Thurgau', 'Silvaner', 'Furmint', 'Assyrtiko', 'Malvasía', 'Pedro Ximénez', 'Palomino', 'Macabeo/Viura', 'Xarel·lo', 'Parellada', 'Picpoul', 'Melon de Bourgogne', 'Ugni Blanc', 'Rosado', 'Blend Tinto', 'Blend Blanco', 'Espumante', 'Otro'];
+
+  const regiones = {
+    'Mendoza': ['Valle de Uco', 'Luján de Cuyo', 'Maipú', 'San Rafael', 'Santa Rosa', 'Junín', 'Rivadavia', 'La Paz'],
+    'Salta': ['Cafayate', 'Cachi', 'Molinos', 'San Carlos', 'Angastaco'],
+    'San Juan': ['Valle de Tulum', 'Valle de Zonda', 'Valle de Ullum', 'Valle de Pedernal', 'Valle de Calingasta'],
+    'La Rioja': ['Famatina', 'Chilecito', 'Valle de la Puerta'],
+    'Catamarca': ['Tinogasta', 'Fiambalá', 'Santa María'],
+    'Neuquén': ['San Patricio del Chañar', 'Añelo'],
+    'Río Negro': ['Alto Valle', 'Valle Medio'],
+    'Patagonia': [],
+    'Córdoba': ['Colonia Caroya', 'Traslasierra'],
+    'Buenos Aires': ['Sierra de la Ventana', 'Médanos']
+  };
 
   useEffect(() => { fetchWines(); }, []);
 
@@ -31,16 +46,28 @@ export default function App() {
     setLoading(false);
   };
 
-  const handleInput = (field, value) => setForm({ ...form, [field]: value });
+  const handleInput = (field, value) => {
+    if (field === 'region') {
+      setForm({ ...form, region: value, subregion: '' });
+    } else {
+      setForm({ ...form, [field]: value });
+    }
+  };
+
   const isFormValid = form.nombre.trim() !== '';
 
   const saveWine = async (probado) => {
     if (!isFormValid) return;
     const wine = { ...form, probado, rating: 0, comentario: '' };
-    if (probado) { setPendingWine(wine); setShowRating(true); }
-    else {
+    if (probado) {
+      setPendingWine(wine);
+      setShowRating(true);
+    } else {
       const { data, error } = await supabase.from('wines').insert([wine]).select();
-      if (!error && data) { setWines([data[0], ...wines]); setForm({ nombre: '', bodega: '', cosecha: '', uva: '' }); }
+      if (!error && data) {
+        setWines([data[0], ...wines]);
+        setForm({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
+      }
     }
   };
 
@@ -51,7 +78,10 @@ export default function App() {
         if (!error) setWines(wines.map(w => w.id === pendingWine.id ? { ...w, probado: true, rating, comentario } : w));
       } else {
         const { data, error } = await supabase.from('wines').insert([{ ...pendingWine, rating, comentario }]).select();
-        if (!error && data) { setWines([data[0], ...wines]); setForm({ nombre: '', bodega: '', cosecha: '', uva: '' }); }
+        if (!error && data) {
+          setWines([data[0], ...wines]);
+          setForm({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
+        }
       }
     }
     setShowRating(false);
@@ -69,18 +99,43 @@ export default function App() {
   const moveWine = async (id) => {
     const wine = wines.find(w => w.id === id);
     if (!wine) return;
-    if (!wine.probado) { setPendingWine(wine); setShowRating(true); }
-    else {
+    if (!wine.probado) {
+      setPendingWine(wine);
+      setShowRating(true);
+    } else {
       const { error } = await supabase.from('wines').update({ probado: false, rating: 0, comentario: '' }).eq('id', id);
       if (!error) setWines(wines.map(w => w.id === id ? { ...w, probado: false, rating: 0, comentario: '' } : w));
     }
   };
 
-  const toggleFilter = (type, value) => { setFilters(f => ({ ...f, [type]: f[type].includes(value) ? f[type].filter(v => v !== value) : [...f[type], value] })); };
+  const toggleFilter = (type, value) => {
+    setFilters(f => ({
+      ...f,
+      [type]: f[type].includes(value) ? f[type].filter(v => v !== value) : [...f[type], value]
+    }));
+  };
+
   const clearFilters = () => setFilters({ cosecha: [], bodega: [], uva: [] });
+
   const currentWines = wines.filter(w => tab === 'lista' ? !w.probado : w.probado);
-  const filterOptions = useMemo(() => ({ cosecha: [...new Set(currentWines.map(w => w.cosecha).filter(Boolean))].sort(), bodega: [...new Set(currentWines.map(w => w.bodega).filter(Boolean))].sort(), uva: [...new Set(currentWines.map(w => w.uva).filter(Boolean))].sort() }), [currentWines]);
-  const filteredWines = currentWines.filter(w => { if (filters.cosecha.length && !filters.cosecha.includes(w.cosecha)) return false; if (filters.bodega.length && !filters.bodega.includes(w.bodega)) return false; if (filters.uva.length && !filters.uva.includes(w.uva)) return false; return true; });
+
+  const filterOptions = useMemo(() => ({
+    cosecha: [...new Set(currentWines.map(w => w.cosecha).filter(Boolean))].sort(),
+    bodega: [...new Set(currentWines.map(w => w.bodega).filter(Boolean))].sort(),
+    uva: [...new Set(currentWines.map(w => w.uva).filter(Boolean))].sort()
+  }), [currentWines]);
+
+  const currentSearch = tab === 'lista' ? searchLista : searchProbados;
+  const setCurrentSearch = tab === 'lista' ? setSearchLista : setSearchProbados;
+
+  const filteredWines = currentWines.filter(w => {
+    if (currentSearch && !w.nombre.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+    if (filters.cosecha.length && !filters.cosecha.includes(w.cosecha)) return false;
+    if (filters.bodega.length && !filters.bodega.includes(w.bodega)) return false;
+    if (filters.uva.length && !filters.uva.includes(w.uva)) return false;
+    return true;
+  });
+
   const activeFilterCount = filters.cosecha.length + filters.bodega.length + filters.uva.length;
   const hasFilterOptions = filterOptions.cosecha.length > 0 || filterOptions.bodega.length > 0 || filterOptions.uva.length > 0;
 
@@ -140,13 +195,43 @@ export default function App() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
               </div>
             </div>
+            <div className="relative">
+              <select 
+                value={form.region} 
+                onChange={e => handleInput('region', e.target.value)}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer"
+                style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.region ? '#4A4A4A' : '#AAAAAA' }}
+              >
+                <option value="">Región</option>
+                {Object.keys(regiones).map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
+            </div>
+            {form.region && regiones[form.region]?.length > 0 && (
+              <div className="relative">
+                <select 
+                  value={form.subregion} 
+                  onChange={e => handleInput('subregion', e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer"
+                  style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.subregion ? '#4A4A4A' : '#AAAAAA' }}
+                >
+                  <option value="">Subregión</option>
+                  {regiones[form.region].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-3 mt-5">
             <button 
               onClick={() => saveWine(false)} 
               disabled={!isFormValid}
               className="flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed"
-              style={{ background: isFormValid ? '#FFFFFF' : '#FFFFFF', border: `2px solid ${isFormValid ? '#722F37' : '#F1F1F1'}`, color: isFormValid ? '#722F37' : '#AAAAAA' }}
+              style={{ background: '#FFFFFF', border: `2px solid ${isFormValid ? '#722F37' : '#F1F1F1'}`, color: isFormValid ? '#722F37' : '#AAAAAA' }}
             >
               <Plus className="w-4 h-4 inline mr-1" />Mi Lista
             </button>
@@ -175,16 +260,30 @@ export default function App() {
           ))}
         </div>
 
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#AAAAAA' }} />
+          <input
+            type="text"
+            placeholder="Buscar por nombre..."
+            value={currentSearch}
+            onChange={e => setCurrentSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-lg text-sm outline-none placeholder:text-[#AAAAAA]"
+            style={{ background: '#FFFFFF', border: '1px solid #DDDDDD', color: '#4A4A4A' }}
+          />
+        </div>
+
         {hasFilterOptions && (
           <div className="mb-4">
-            <button 
-              onClick={() => setShowFilters(!showFilters)} 
-              className="flex items-center gap-2 text-sm mb-3" 
-              style={{ color: '#722F37' }}
-            >
-              <Filter className="w-4 h-4" />Filtros
-              {activeFilterCount > 0 && <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: '#722F37', color: '#FAFAFA' }}>{activeFilterCount}</span>}
-            </button>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2" style={{ color: '#722F37' }}>
+                <Filter className="w-4 h-4" />
+                <span className="text-sm">Filtros</span>
+                {activeFilterCount > 0 && <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: '#722F37', color: '#FAFAFA' }}>{activeFilterCount}</span>}
+              </div>
+              <button onClick={() => setShowFilters(!showFilters)}>
+                {showFilters ? <ChevronUp className="w-5 h-5" style={{ color: '#722F37' }} /> : <ChevronDown className="w-5 h-5" style={{ color: '#722F37' }} />}
+              </button>
+            </div>
             {showFilters && (
               <div className="p-4 rounded-xl space-y-3" style={{ background: '#fff' }}>
                 {[{ key: 'cosecha', label: 'Cosecha' }, { key: 'bodega', label: 'Bodega' }, { key: 'uva', label: 'Uva' }].map(({ key, label }) => (
@@ -219,15 +318,15 @@ export default function App() {
             </div>
           ) : filteredWines.length === 0 ? (
             <p className="text-center py-8 text-sm" style={{ color: '#A4A4A4' }}>
-              {activeFilterCount > 0 ? 'No hay vinos con estos filtros' : tab === 'lista' ? 'Tu lista está vacía' : 'Aún no probaste ningún vino'}
+              {currentSearch ? 'No hay vinos con ese nombre' : activeFilterCount > 0 ? 'No hay vinos con estos filtros' : tab === 'lista' ? 'Tu lista está vacía' : 'Aún no probaste ningún vino'}
             </p>
           ) : (
             filteredWines.map(wine => (
               <div key={wine.id} className="p-4 rounded-xl shadow-sm" style={{ background: '#fff' }}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h3 className="font-medium" style={{ color: '#A4A4A4' }}>{wine.nombre}</h3>
-                    <p className="text-sm mt-1" style={{ color: '#A4A4A4' }}>{[wine.bodega, wine.cosecha, wine.uva].filter(Boolean).join(' · ') || 'Sin detalles'}</p>
+                    <h3 className="font-medium" style={{ color: '#4A4A4A' }}>{wine.nombre}</h3>
+                    <p className="text-sm mt-1" style={{ color: '#A4A4A4' }}>{[wine.bodega, wine.cosecha, wine.uva, wine.region, wine.subregion].filter(Boolean).join(' · ') || 'Sin detalles'}</p>
                     {wine.probado && wine.rating > 0 && (
                       <div className="flex gap-0.5 mt-2">
                         {[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-4 h-4" fill={s <= wine.rating ? '#722F37' : 'none'} style={{ color: '#722F37' }} />)}
