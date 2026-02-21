@@ -14,6 +14,8 @@ export default function App() {
   const [showRating, setShowRating] = useState(false);
   const [pendingWine, setPendingWine] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [comentario, setComentario] = useState('');
   const [filters, setFilters] = useState({ cosecha: [], bodega: [], uva: [] });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -34,7 +36,7 @@ export default function App() {
 
   const saveWine = async (probado) => {
     if (!isFormValid) return;
-    const wine = { ...form, probado, rating: 0 };
+    const wine = { ...form, probado, rating: 0, comentario: '' };
     if (probado) { setPendingWine(wine); setShowRating(true); }
     else {
       const { data, error } = await supabase.from('wines').insert([wine]).select();
@@ -45,14 +47,18 @@ export default function App() {
   const confirmRating = async (rating) => {
     if (pendingWine) {
       if (pendingWine.id) {
-        const { error } = await supabase.from('wines').update({ probado: true, rating }).eq('id', pendingWine.id);
-        if (!error) setWines(wines.map(w => w.id === pendingWine.id ? { ...w, probado: true, rating } : w));
+        const { error } = await supabase.from('wines').update({ probado: true, rating, comentario }).eq('id', pendingWine.id);
+        if (!error) setWines(wines.map(w => w.id === pendingWine.id ? { ...w, probado: true, rating, comentario } : w));
       } else {
-        const { data, error } = await supabase.from('wines').insert([{ ...pendingWine, rating }]).select();
+        const { data, error } = await supabase.from('wines').insert([{ ...pendingWine, rating, comentario }]).select();
         if (!error && data) { setWines([data[0], ...wines]); setForm({ nombre: '', bodega: '', cosecha: '', uva: '' }); }
       }
     }
-    setShowRating(false); setPendingWine(null); setHoverRating(0);
+    setShowRating(false);
+    setPendingWine(null);
+    setHoverRating(0);
+    setSelectedRating(0);
+    setComentario('');
   };
 
   const deleteWine = async (id) => {
@@ -65,8 +71,8 @@ export default function App() {
     if (!wine) return;
     if (!wine.probado) { setPendingWine(wine); setShowRating(true); }
     else {
-      const { error } = await supabase.from('wines').update({ probado: false, rating: 0 }).eq('id', id);
-      if (!error) setWines(wines.map(w => w.id === id ? { ...w, probado: false, rating: 0 } : w));
+      const { error } = await supabase.from('wines').update({ probado: false, rating: 0, comentario: '' }).eq('id', id);
+      if (!error) setWines(wines.map(w => w.id === id ? { ...w, probado: false, rating: 0, comentario: '' } : w));
     }
   };
 
@@ -79,49 +85,205 @@ export default function App() {
   const hasFilterOptions = filterOptions.cosecha.length > 0 || filterOptions.bodega.length > 0 || filterOptions.uva.length > 0;
 
   return (
-    <div className="min-h-screen" style={{ background: '#FDF8F3' }}>
-      <header className="px-4 py-6 text-center" style={{ background: '#722F37' }}>
-        <div className="flex items-center justify-center gap-2">
-          <Wine className="w-6 h-6" style={{ color: '#FDF8F3' }} />
-          <h1 className="text-xl font-light tracking-wide" style={{ color: '#FDF8F3' }}>Mi Diario de Vinos</h1>
+    <div className="min-h-screen" style={{ background: '#FAFAFA' }}>
+      <header className="px-4 py-6 text-center">
+        <div className="flex items-center justify-center">
+          <Wine className="w-8 h-8" style={{ color: '#722F37' }} />
         </div>
       </header>
+
       <main className="max-w-md mx-auto px-4 py-6">
         <section className="rounded-xl p-5 mb-6 shadow-sm" style={{ background: '#fff' }}>
-          <h2 className="text-sm font-medium mb-4 uppercase tracking-wider" style={{ color: '#722F37' }}>Nuevo Vino</h2>
+          <h2 className="text-sm font-medium mb-4 tracking-wider" style={{ color: '#722F37' }}>Agregar nuevo vino:</h2>
           <div className="space-y-3">
-            <input type="text" placeholder="Nombre del vino *" value={form.nombre} onChange={e => handleInput('nombre', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none" style={{ background: '#FDF8F3', border: '1px solid #E8DDD5', color: '#4A3728' }} />
-            <input type="text" placeholder="Bodega" value={form.bodega} onChange={e => handleInput('bodega', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none" style={{ background: '#FDF8F3', border: '1px solid #E8DDD5', color: '#4A3728' }} />
+            <input 
+              type="text" 
+              placeholder="Nombre del vino *" 
+              value={form.nombre} 
+              onChange={e => handleInput('nombre', e.target.value)}
+              className="w-full px-4 py-3 rounded-lg text-sm outline-none placeholder:text-[#AAAAAA]" 
+              style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: '#4A4A4A' }} 
+            />
+            <input 
+              type="text" 
+              placeholder="Bodega" 
+              value={form.bodega} 
+              onChange={e => handleInput('bodega', e.target.value)}
+              className="w-full px-4 py-3 rounded-lg text-sm outline-none placeholder:text-[#AAAAAA]" 
+              style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: '#4A4A4A' }} 
+            />
             <div className="relative">
-              <select value={form.cosecha} onChange={e => handleInput('cosecha', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer" style={{ background: '#FDF8F3', border: '1px solid #E8DDD5', color: form.cosecha ? '#4A3728' : '#9CA3AF' }}>
+              <select 
+                value={form.cosecha} 
+                onChange={e => handleInput('cosecha', e.target.value)}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer"
+                style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.cosecha ? '#4A4A4A' : '#AAAAAA' }}
+              >
                 <option value="">Cosecha</option>
                 {cosechas.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#8B7355' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg></div>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
             </div>
             <div className="relative">
-              <select value={form.uva} onChange={e => handleInput('uva', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer" style={{ background: '#FDF8F3', border: '1px solid #E8DDD5', color: form.uva ? '#4A3728' : '#9CA3AF' }}>
+              <select 
+                value={form.uva} 
+                onChange={e => handleInput('uva', e.target.value)}
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer"
+                style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.uva ? '#4A4A4A' : '#AAAAAA' }}
+              >
                 <option value="">Uva</option>
                 {uvas.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#8B7355' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg></div>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
             </div>
           </div>
           <div className="flex gap-3 mt-5">
-            <button onClick={() => saveWine(false)} disabled={!isFormValid} className="flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed" style={{ background: isFormValid ? '#FDF8F3' : '#E5E5E5', border: `2px solid ${isFormValid ? '#722F37' : '#9CA3AF'}`, color: isFormValid ? '#722F37' : '#9CA3AF' }}><Plus className="w-4 h-4 inline mr-1" />Mi Lista</button>
-            <button onClick={() => saveWine(true)} disabled={!isFormValid} className="flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed" style={{ background: isFormValid ? '#722F37' : '#9CA3AF', color: '#FDF8F3' }}><Star className="w-4 h-4 inline mr-1" />Ya lo probé</button>
+            <button 
+              onClick={() => saveWine(false)} 
+              disabled={!isFormValid}
+              className="flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed"
+              style={{ background: isFormValid ? '#FFFFFF' : '#FFFFFF', border: `2px solid ${isFormValid ? '#722F37' : '#F1F1F1'}`, color: isFormValid ? '#722F37' : '#AAAAAA' }}
+            >
+              <Plus className="w-4 h-4 inline mr-1" />Mi Lista
+            </button>
+            <button 
+              onClick={() => saveWine(true)} 
+              disabled={!isFormValid}
+              className="flex-1 py-3 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed"
+              style={{ background: isFormValid ? '#722F37' : '#F1F1F1', color: isFormValid ? '#FFFFFF' : '#AAAAAA' }}
+            >
+              <Star className="w-4 h-4 inline mr-1" />Ya lo probé
+            </button>
           </div>
         </section>
-        <div className="flex rounded-xl overflow-hidden mb-4" style={{ background: '#E8DDD5' }}>
-          {['lista', 'probados'].map(t => (<button key={t} onClick={() => { setTab(t); clearFilters(); }} className="flex-1 py-3 text-sm font-medium transition-all" style={{ background: tab === t ? '#722F37' : 'transparent', color: tab === t ? '#FDF8F3' : '#722F37' }}>{t === 'lista' ? 'Mi Lista' : 'Ya probé'}<span className="ml-2 text-xs opacity-70">({wines.filter(w => t === 'lista' ? !w.probado : w.probado).length})</span></button>))}
+
+        <div className="flex rounded-xl overflow-hidden mb-4" style={{ background: '#EEEEEE' }}>
+          {['lista', 'probados'].map(t => (
+            <button 
+              key={t} 
+              onClick={() => { setTab(t); clearFilters(); }}
+              className="flex-1 py-3 text-sm font-medium transition-all"
+              style={{ background: tab === t ? '#722F37' : 'transparent', color: tab === t ? '#FAFAFA' : '#722F37' }}
+            >
+              {t === 'lista' ? 'Mi Lista' : 'Ya probé'}
+              <span className="ml-2 text-xs opacity-70">({wines.filter(w => t === 'lista' ? !w.probado : w.probado).length})</span>
+            </button>
+          ))}
         </div>
-        {hasFilterOptions && (<div className="mb-4"><button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2 text-sm mb-3" style={{ color: '#722F37' }}><Filter className="w-4 h-4" />Filtros{activeFilterCount > 0 && <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: '#722F37', color: '#FDF8F3' }}>{activeFilterCount}</span>}</button>
-          {showFilters && (<div className="p-4 rounded-xl space-y-3" style={{ background: '#fff' }}>{[{ key: 'cosecha', label: 'Cosecha' }, { key: 'bodega', label: 'Bodega' }, { key: 'uva', label: 'Uva' }].map(({ key, label }) => (filterOptions[key].length > 0 && (<div key={key}><p className="text-xs uppercase tracking-wider mb-2" style={{ color: '#8B7355' }}>{label}</p><div className="flex flex-wrap gap-2">{filterOptions[key].map(val => (<button key={val} onClick={() => toggleFilter(key, val)} className="px-3 py-1.5 rounded-full text-xs transition-all" style={{ background: filters[key].includes(val) ? '#722F37' : '#FDF8F3', color: filters[key].includes(val) ? '#FDF8F3' : '#722F37', border: '1px solid #722F37' }}>{val}</button>))}</div></div>)))}{activeFilterCount > 0 && <button onClick={clearFilters} className="text-xs underline" style={{ color: '#8B7355' }}>Limpiar filtros</button>}</div>)}</div>)}
+
+        {hasFilterOptions && (
+          <div className="mb-4">
+            <button 
+              onClick={() => setShowFilters(!showFilters)} 
+              className="flex items-center gap-2 text-sm mb-3" 
+              style={{ color: '#722F37' }}
+            >
+              <Filter className="w-4 h-4" />Filtros
+              {activeFilterCount > 0 && <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: '#722F37', color: '#FAFAFA' }}>{activeFilterCount}</span>}
+            </button>
+            {showFilters && (
+              <div className="p-4 rounded-xl space-y-3" style={{ background: '#fff' }}>
+                {[{ key: 'cosecha', label: 'Cosecha' }, { key: 'bodega', label: 'Bodega' }, { key: 'uva', label: 'Uva' }].map(({ key, label }) => (
+                  filterOptions[key].length > 0 && (
+                    <div key={key}>
+                      <p className="text-xs uppercase tracking-wider mb-2" style={{ color: '#A4A4A4' }}>{label}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {filterOptions[key].map(val => (
+                          <button 
+                            key={val} 
+                            onClick={() => toggleFilter(key, val)} 
+                            className="px-3 py-1.5 rounded-full text-xs transition-all"
+                            style={{ background: filters[key].includes(val) ? '#722F37' : '#FAFAFA', color: filters[key].includes(val) ? '#FAFAFA' : '#722F37', border: '1px solid #722F37' }}
+                          >
+                            {val}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                ))}
+                {activeFilterCount > 0 && <button onClick={clearFilters} className="text-xs underline" style={{ color: '#A4A4A4' }}>Limpiar filtros</button>}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-3">
-          {loading ? (<div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" style={{ color: '#722F37' }} /></div>) : filteredWines.length === 0 ? (<p className="text-center py-8 text-sm" style={{ color: '#8B7355' }}>{activeFilterCount > 0 ? 'No hay vinos con estos filtros' : tab === 'lista' ? 'Tu lista está vacía' : 'Aún no probaste ningún vino'}</p>) : (filteredWines.map(wine => (<div key={wine.id} className="p-4 rounded-xl shadow-sm" style={{ background: '#fff' }}><div className="flex justify-between items-start"><div className="flex-1"><h3 className="font-medium" style={{ color: '#4A3728' }}>{wine.nombre}</h3><p className="text-sm mt-1" style={{ color: '#8B7355' }}>{[wine.bodega, wine.cosecha, wine.uva].filter(Boolean).join(' · ') || 'Sin detalles'}</p>{wine.probado && wine.rating > 0 && (<div className="flex gap-0.5 mt-2">{[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-4 h-4" fill={s <= wine.rating ? '#722F37' : 'none'} style={{ color: '#722F37' }} />)}</div>)}</div><div className="flex gap-2 ml-3"><button onClick={() => moveWine(wine.id)} className="p-2 rounded-full" style={{ background: '#FDF8F3' }}><ArrowRightLeft className="w-4 h-4" style={{ color: '#722F37' }} /></button><button onClick={() => deleteWine(wine.id)} className="p-2 rounded-full" style={{ background: '#FDF8F3' }}><Trash2 className="w-4 h-4" style={{ color: '#722F37' }} /></button></div></div></div>)))}
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#722F37' }} />
+            </div>
+          ) : filteredWines.length === 0 ? (
+            <p className="text-center py-8 text-sm" style={{ color: '#A4A4A4' }}>
+              {activeFilterCount > 0 ? 'No hay vinos con estos filtros' : tab === 'lista' ? 'Tu lista está vacía' : 'Aún no probaste ningún vino'}
+            </p>
+          ) : (
+            filteredWines.map(wine => (
+              <div key={wine.id} className="p-4 rounded-xl shadow-sm" style={{ background: '#fff' }}>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-medium" style={{ color: '#A4A4A4' }}>{wine.nombre}</h3>
+                    <p className="text-sm mt-1" style={{ color: '#A4A4A4' }}>{[wine.bodega, wine.cosecha, wine.uva].filter(Boolean).join(' · ') || 'Sin detalles'}</p>
+                    {wine.probado && wine.rating > 0 && (
+                      <div className="flex gap-0.5 mt-2">
+                        {[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-4 h-4" fill={s <= wine.rating ? '#722F37' : 'none'} style={{ color: '#722F37' }} />)}
+                      </div>
+                    )}
+                    {wine.comentario && (
+                      <p className="text-sm mt-2 italic" style={{ color: '#A4A4A4' }}>"{wine.comentario}"</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 ml-3">
+                    <button onClick={() => moveWine(wine.id)} className="p-2 rounded-full" style={{ background: '#FAFAFA' }}><ArrowRightLeft className="w-4 h-4" style={{ color: '#722F37' }} /></button>
+                    <button onClick={() => deleteWine(wine.id)} className="p-2 rounded-full" style={{ background: '#FAFAFA' }}><Trash2 className="w-4 h-4" style={{ color: '#722F37' }} /></button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </main>
-      {showRating && pendingWine && (<div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background: 'rgba(0,0,0,0.5)' }}><div className="w-full max-w-sm rounded-xl p-6 text-center relative" style={{ background: '#FDF8F3' }}><button onClick={() => { setShowRating(false); setPendingWine(null); setHoverRating(0); }} className="absolute top-4 right-4"><X className="w-5 h-5" style={{ color: '#8B7355' }} /></button><Wine className="w-10 h-10 mx-auto mb-3" style={{ color: '#722F37' }} /><h3 className="text-lg font-medium mb-1" style={{ color: '#4A3728' }}>¿Qué te pareció?</h3><p className="text-sm mb-5" style={{ color: '#8B7355' }}>{pendingWine.nombre}</p><div className="flex justify-center gap-2 mb-5">{[1, 2, 3, 4, 5].map(s => (<button key={s} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} onClick={() => confirmRating(s)} className="p-1 transition-transform hover:scale-110"><Star className="w-8 h-8" fill={s <= hoverRating ? '#722F37' : 'none'} style={{ color: '#722F37' }} /></button>))}</div><button onClick={() => confirmRating(0)} className="text-sm underline" style={{ color: '#8B7355' }}>Guardar sin puntuar</button></div></div>)}
+
+      {showRating && pendingWine && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="w-full max-w-sm rounded-xl p-6 text-center relative" style={{ background: '#FAFAFA' }}>
+            <button onClick={() => { setShowRating(false); setPendingWine(null); setHoverRating(0); setSelectedRating(0); setComentario(''); }} className="absolute top-4 right-4">
+              <X className="w-5 h-5" style={{ color: '#A4A4A4' }} />
+            </button>
+            <Wine className="w-10 h-10 mx-auto mb-3" style={{ color: '#722F37' }} />
+            <h3 className="text-lg font-medium mb-1" style={{ color: '#A4A4A4' }}>¿Qué te pareció?</h3>
+            <p className="text-sm mb-5" style={{ color: '#A4A4A4' }}>{pendingWine.nombre}</p>
+            <div className="flex justify-center gap-2 mb-5">
+              {[1, 2, 3, 4, 5].map(s => (
+                <button key={s} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} onClick={() => setSelectedRating(s)} className="p-1 transition-transform hover:scale-110">
+                  <Star className="w-8 h-8" fill={s <= (hoverRating || selectedRating) ? '#722F37' : 'none'} style={{ color: '#722F37' }} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              placeholder="Comentario (opcional)"
+              value={comentario}
+              onChange={e => setComentario(e.target.value.slice(0, 200))}
+              maxLength={200}
+              className="w-full px-4 py-3 rounded-lg text-sm outline-none placeholder:text-[#AAAAAA] resize-none mb-3"
+              style={{ background: '#FFFFFF', border: '1px solid #DDDDDD', color: '#4A4A4A', minHeight: '80px' }}
+            />
+            <p className="text-xs mb-4" style={{ color: '#AAAAAA' }}>{comentario.length}/200</p>
+            <button 
+              onClick={() => confirmRating(selectedRating)} 
+              disabled={selectedRating === 0 && comentario.trim() === ''}
+              className="w-full py-3 rounded-lg text-sm font-medium disabled:cursor-not-allowed"
+              style={{ background: (selectedRating > 0 || comentario.trim()) ? '#722F37' : '#F1F1F1', color: (selectedRating > 0 || comentario.trim()) ? '#FFFFFF' : '#AAAAAA' }}
+            >
+              Guardar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
