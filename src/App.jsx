@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Wine, Star, Trash2, ArrowRightLeft, X, Plus, Filter, ChevronDown, ChevronUp, Search, Loader2 } from 'lucide-react';
@@ -8,6 +10,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function App() {
   const [wines, setWines] = useState([]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
   const [tab, setTab] = useState('lista');
@@ -37,7 +42,57 @@ export default function App() {
     'Buenos Aires': ['Sierra de la Ventana', 'Médanos']
   };
 
-  useEffect(() => { fetchWines(); }, []);
+  useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setSession(session);
+  });
+
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    (_event, session) => {
+      setSession(session);
+      if (session) fetchWines();
+    }
+  );
+
+    if (!session) {
+  return (
+    <div>
+      <h2>Login</h2>
+
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+
+      <button
+        onClick={async () => {
+          const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (error) alert(error.message);
+        }}
+      >
+        Iniciar sesión
+      </button>
+    </div>
+  );
+}
+    
+  return () => {
+    listener.subscription.unsubscribe();
+  };
+}, []);
 
   const fetchWines = async () => {
     setLoading(true);
