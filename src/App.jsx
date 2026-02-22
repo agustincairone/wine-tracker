@@ -22,6 +22,7 @@ export default function App() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchLista, setSearchLista] = useState('');
   const [searchProbados, setSearchProbados] = useState('');
+  const [toast, setToast] = useState(false);
 
   const cosechas = Array.from({ length: 30 }, (_, i) => String(2025 - i));
   const uvas = ['Malbec', 'Cabernet Sauvignon', 'Merlot', 'Pinot Noir', 'Syrah/Shiraz', 'Tempranillo', 'Bonarda', 'Tannat', 'Carménère', 'Petit Verdot', 'Cabernet Franc', 'Sangiovese', 'Nebbiolo', 'Barbera', 'Grenache/Garnacha', 'Mourvèdre', 'Zinfandel', 'Primitivo', 'Montepulciano', 'Mencia', 'Graciano', 'Monastrell', 'Carignan', 'Corvina', "Nero d'Avola", 'Aglianico', 'Dolcetto', 'Gamay', 'Pinotage', 'Touriga Nacional', 'Tinta Roriz', 'Criolla', 'Lambrusco', 'Zweigelt', 'Blaufränkisch', 'St. Laurent', 'Dornfelder', 'Chardonnay', 'Sauvignon Blanc', 'Torrontés', 'Riesling', 'Viognier', 'Pinot Grigio/Gris', 'Gewürztraminer', 'Semillón', 'Moscatel/Muscat', 'Chenin Blanc', 'Albariño', 'Verdejo', 'Godello', 'Grüner Veltliner', 'Vermentino', 'Fiano', 'Greco', 'Garganega', 'Trebbiano', 'Marsanne', 'Roussanne', 'Müller-Thurgau', 'Silvaner', 'Furmint', 'Assyrtiko', 'Malvasía', 'Pedro Ximénez', 'Palomino', 'Macabeo/Viura', 'Xarel·lo', 'Parellada', 'Picpoul', 'Melon de Bourgogne', 'Ugni Blanc', 'Rosado', 'Blend Tinto', 'Blend Blanco', 'Espumante', 'Otro'];
@@ -37,6 +38,11 @@ export default function App() {
     'Patagonia': [],
     'Córdoba': ['Colonia Caroya', 'Traslasierra'],
     'Buenos Aires': ['Sierra de la Ventana', 'Médanos']
+  };
+
+  const showToast = () => {
+    setToast(true);
+    setTimeout(() => setToast(false), 3000);
   };
 
   useEffect(() => {
@@ -91,6 +97,7 @@ export default function App() {
       if (!error && data) {
         setWines([data[0], ...wines]);
         setForm({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
+        showToast();
       }
     }
   };
@@ -105,6 +112,7 @@ export default function App() {
         if (!error && data) {
           setWines([data[0], ...wines]);
           setForm({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
+          showToast();
         }
       }
     }
@@ -177,11 +185,7 @@ export default function App() {
         <Wine className="w-16 h-16 mb-6" style={{ color: '#722F37' }} />
         <h1 className="text-2xl font-light mb-2" style={{ color: '#4A4A4A' }}>Wine Tracker</h1>
         <p className="text-sm mb-8" style={{ color: '#AAAAAA' }}>Tu diario personal de vinos</p>
-        <button
-          onClick={signInWithGoogle}
-          className="flex items-center gap-3 px-6 py-3 rounded-lg text-sm font-medium shadow-sm"
-          style={{ background: '#FFFFFF', border: '1px solid #DDDDDD', color: '#4A4A4A' }}
-        >
+        <button onClick={signInWithGoogle} className="flex items-center gap-3 px-6 py-3 rounded-lg text-sm font-medium shadow-sm" style={{ background: '#FFFFFF', border: '1px solid #DDDDDD', color: '#4A4A4A' }}>
           <svg width="18" height="18" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -271,12 +275,10 @@ export default function App() {
             <h2 className="text-sm font-medium mb-4 tracking-wider" style={{ color: '#722F37' }}>
               {section === 'lista' ? 'Mi Lista' : 'Ya probé'}
             </h2>
-
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#AAAAAA' }} />
               <input type="text" placeholder="Buscar por nombre..." value={currentSearch} onChange={e => setCurrentSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 rounded-lg text-sm outline-none placeholder:text-[#AAAAAA]" style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: '#4A4A4A' }} />
             </div>
-
             {hasFilterOptions && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-3">
@@ -310,7 +312,6 @@ export default function App() {
                 )}
               </div>
             )}
-
             <div className="space-y-3">
               {loading ? (
                 <div className="flex justify-center py-8">
@@ -375,6 +376,20 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <div
+        className="fixed bottom-6 left-1/2 px-5 py-3 rounded-full text-sm font-medium shadow-lg"
+        style={{
+          background: '#722F37',
+          color: '#FFFFFF',
+          transform: `translateX(-50%) translateY(${toast ? '0px' : '24px'})`,
+          opacity: toast ? 1 : 0,
+          transition: 'all 0.3s ease',
+          pointerEvents: 'none'
+        }}
+      >
+        Vino agregado con éxito 🍷
+      </div>
     </div>
   );
 }
