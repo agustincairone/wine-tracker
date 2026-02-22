@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
-
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from '@supabase/supabase-js';
 import { Wine, Star, Trash2, ArrowRightLeft, X, Plus, Filter, ChevronDown, ChevronUp, Search, Loader2 } from 'lucide-react';
 
