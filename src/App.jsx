@@ -32,53 +32,17 @@ export default function App() {
       'Valle de Uco': ['Altamira', 'Los Chacayes', 'Vista Flores', 'Gualtallary', 'La Consulta', 'Tunuyán', 'Tupungato'],
       'Luján de Cuyo': ['Agrelo', 'Perdriel', 'Vistalba', 'Las Compuertas', 'Chacras de Coria', 'Mayor Drummond'],
       'Maipú': ['Russell', 'Cruz de Piedra', 'Lunlunta', 'Barrancas', 'Coquimbito'],
-      'San Rafael': [],
-      'Santa Rosa': [],
-      'Junín': [],
-      'Rivadavia': [],
-      'La Paz': [],
+      'San Rafael': [], 'Santa Rosa': [], 'Junín': [], 'Rivadavia': [], 'La Paz': [],
     },
-    'Salta': {
-      'Cafayate': [],
-      'Cachi': [],
-      'Molinos': [],
-      'San Carlos': [],
-      'Angastaco': [],
-    },
-    'San Juan': {
-      'Valle de Tulum': [],
-      'Valle de Zonda': [],
-      'Valle de Ullum': [],
-      'Valle de Pedernal': [],
-      'Valle de Calingasta': [],
-    },
-    'La Rioja': {
-      'Famatina': [],
-      'Chilecito': [],
-      'Valle de la Puerta': [],
-    },
-    'Catamarca': {
-      'Tinogasta': [],
-      'Fiambalá': [],
-      'Santa María': [],
-    },
-    'Neuquén': {
-      'San Patricio del Chañar': [],
-      'Añelo': [],
-    },
-    'Río Negro': {
-      'Alto Valle': [],
-      'Valle Medio': [],
-    },
+    'Salta': { 'Cafayate': [], 'Cachi': [], 'Molinos': [], 'San Carlos': [], 'Angastaco': [] },
+    'San Juan': { 'Valle de Tulum': [], 'Valle de Zonda': [], 'Valle de Ullum': [], 'Valle de Pedernal': [], 'Valle de Calingasta': [] },
+    'La Rioja': { 'Famatina': [], 'Chilecito': [], 'Valle de la Puerta': [] },
+    'Catamarca': { 'Tinogasta': [], 'Fiambalá': [], 'Santa María': [] },
+    'Neuquén': { 'San Patricio del Chañar': [], 'Añelo': [] },
+    'Río Negro': { 'Alto Valle': [], 'Valle Medio': [] },
     'Patagonia': {},
-    'Córdoba': {
-      'Colonia Caroya': [],
-      'Traslasierra': [],
-    },
-    'Buenos Aires': {
-      'Sierra de la Ventana': [],
-      'Médanos': [],
-    },
+    'Córdoba': { 'Colonia Caroya': [], 'Traslasierra': [] },
+    'Buenos Aires': { 'Sierra de la Ventana': [], 'Médanos': [] },
   };
 
   const showToast = () => {
@@ -131,14 +95,15 @@ export default function App() {
 
   const saveWine = async (probado) => {
     if (!isFormValid) return;
-    const wine = { ...form, probado, rating: 0, comentario: '', user_id: user.id };    if (probado) {
+    const wine = { ...form, probado, rating: 0, comentario: '', user_id: user.id };
+    if (probado) {
       setPendingWine(wine);
       setShowRating(true);
     } else {
       const { data, error } = await supabase.from('wines').insert([wine]).select();
       if (!error && data) {
         setWines([data[0], ...wines]);
-        setForm({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
+        setForm({ nombre: '', bodega: '', cosecha: '', uva: '', provincia: '', region: '', subregion: '' });
         showToast();
       }
     }
@@ -153,7 +118,7 @@ export default function App() {
         const { data, error } = await supabase.from('wines').insert([{ ...pendingWine, rating, comentario }]).select();
         if (!error && data) {
           setWines([data[0], ...wines]);
-          setForm({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
+          setForm({ nombre: '', bodega: '', cosecha: '', uva: '', provincia: '', region: '', subregion: '' });
           showToast();
         }
       }
@@ -183,10 +148,7 @@ export default function App() {
   };
 
   const toggleFilter = (type, value) => {
-    setFilters(f => ({
-      ...f,
-      [type]: f[type].includes(value) ? f[type].filter(v => v !== value) : [...f[type], value]
-    }));
+    setFilters(f => ({ ...f, [type]: f[type].includes(value) ? f[type].filter(v => v !== value) : [...f[type], value] }));
   };
 
   const clearFilters = () => setFilters({ cosecha: [], bodega: [], uva: [] });
@@ -285,17 +247,26 @@ export default function App() {
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg></div>
               </div>
               <div className="relative">
-                <select value={form.region} onChange={e => handleInput('region', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer" style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.region ? '#4A4A4A' : '#AAAAAA' }}>
-                  <option value="">Región</option>
-                  {Object.keys(regiones).map(r => <option key={r} value={r}>{r}</option>)}
+                <select value={form.provincia} onChange={e => handleInput('provincia', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer" style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.provincia ? '#4A4A4A' : '#AAAAAA' }}>
+                  <option value="">Provincia</option>
+                  {Object.keys(geografias).map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg></div>
               </div>
-              {form.region && regiones[form.region]?.length > 0 && (
+              {form.provincia && Object.keys(geografias[form.provincia] || {}).length > 0 && (
+                <div className="relative">
+                  <select value={form.region} onChange={e => handleInput('region', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer" style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.region ? '#4A4A4A' : '#AAAAAA' }}>
+                    <option value="">Región</option>
+                    {Object.keys(geografias[form.provincia]).map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                </div>
+              )}
+              {form.region && geografias[form.provincia]?.[form.region]?.length > 0 && (
                 <div className="relative">
                   <select value={form.subregion} onChange={e => handleInput('subregion', e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm outline-none appearance-none cursor-pointer" style={{ background: '#FAFAFA', border: '1px solid #DDDDDD', color: form.subregion ? '#4A4A4A' : '#AAAAAA' }}>
                     <option value="">Subregión</option>
-                    {regiones[form.region].map(s => <option key={s} value={s}>{s}</option>)}
+                    {geografias[form.provincia][form.region].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#A4A4A4' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg></div>
                 </div>
