@@ -11,7 +11,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [wines, setWines] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ nombre: '', bodega: '', cosecha: '', uva: '', region: '', subregion: '' });
+  const [form, setForm] = useState({ nombre: '', bodega: '', cosecha: '', uva: '', provincia: '', region: '', subregion: '' });
   const [section, setSection] = useState('agregar');
   const [showRating, setShowRating] = useState(false);
   const [pendingWine, setPendingWine] = useState(null);
@@ -27,17 +27,58 @@ export default function App() {
   const cosechas = Array.from({ length: 30 }, (_, i) => String(2025 - i));
   const uvas = ['Malbec', 'Cabernet Sauvignon', 'Merlot', 'Pinot Noir', 'Syrah/Shiraz', 'Tempranillo', 'Bonarda', 'Tannat', 'Carménère', 'Petit Verdot', 'Cabernet Franc', 'Sangiovese', 'Nebbiolo', 'Barbera', 'Grenache/Garnacha', 'Mourvèdre', 'Zinfandel', 'Primitivo', 'Montepulciano', 'Mencia', 'Graciano', 'Monastrell', 'Carignan', 'Corvina', "Nero d'Avola", 'Aglianico', 'Dolcetto', 'Gamay', 'Pinotage', 'Touriga Nacional', 'Tinta Roriz', 'Criolla', 'Lambrusco', 'Zweigelt', 'Blaufränkisch', 'St. Laurent', 'Dornfelder', 'Chardonnay', 'Sauvignon Blanc', 'Torrontés', 'Riesling', 'Viognier', 'Pinot Grigio/Gris', 'Gewürztraminer', 'Semillón', 'Moscatel/Muscat', 'Chenin Blanc', 'Albariño', 'Verdejo', 'Godello', 'Grüner Veltliner', 'Vermentino', 'Fiano', 'Greco', 'Garganega', 'Trebbiano', 'Marsanne', 'Roussanne', 'Müller-Thurgau', 'Silvaner', 'Furmint', 'Assyrtiko', 'Malvasía', 'Pedro Ximénez', 'Palomino', 'Macabeo/Viura', 'Xarel·lo', 'Parellada', 'Picpoul', 'Melon de Bourgogne', 'Ugni Blanc', 'Rosado', 'Blend Tinto', 'Blend Blanco', 'Espumante', 'Otro'];
 
-  const regiones = {
-    'Mendoza': ['Valle de Uco', 'Luján de Cuyo', 'Maipú', 'San Rafael', 'Santa Rosa', 'Junín', 'Rivadavia', 'La Paz'],
-    'Salta': ['Cafayate', 'Cachi', 'Molinos', 'San Carlos', 'Angastaco'],
-    'San Juan': ['Valle de Tulum', 'Valle de Zonda', 'Valle de Ullum', 'Valle de Pedernal', 'Valle de Calingasta'],
-    'La Rioja': ['Famatina', 'Chilecito', 'Valle de la Puerta'],
-    'Catamarca': ['Tinogasta', 'Fiambalá', 'Santa María'],
-    'Neuquén': ['San Patricio del Chañar', 'Añelo'],
-    'Río Negro': ['Alto Valle', 'Valle Medio'],
-    'Patagonia': [],
-    'Córdoba': ['Colonia Caroya', 'Traslasierra'],
-    'Buenos Aires': ['Sierra de la Ventana', 'Médanos']
+  const geografias = {
+    'Mendoza': {
+      'Valle de Uco': ['Altamira', 'Los Chacayes', 'Vista Flores', 'Gualtallary', 'La Consulta', 'Tunuyán', 'Tupungato'],
+      'Luján de Cuyo': ['Agrelo', 'Perdriel', 'Vistalba', 'Las Compuertas', 'Chacras de Coria', 'Mayor Drummond'],
+      'Maipú': ['Russell', 'Cruz de Piedra', 'Lunlunta', 'Barrancas', 'Coquimbito'],
+      'San Rafael': [],
+      'Santa Rosa': [],
+      'Junín': [],
+      'Rivadavia': [],
+      'La Paz': [],
+    },
+    'Salta': {
+      'Cafayate': [],
+      'Cachi': [],
+      'Molinos': [],
+      'San Carlos': [],
+      'Angastaco': [],
+    },
+    'San Juan': {
+      'Valle de Tulum': [],
+      'Valle de Zonda': [],
+      'Valle de Ullum': [],
+      'Valle de Pedernal': [],
+      'Valle de Calingasta': [],
+    },
+    'La Rioja': {
+      'Famatina': [],
+      'Chilecito': [],
+      'Valle de la Puerta': [],
+    },
+    'Catamarca': {
+      'Tinogasta': [],
+      'Fiambalá': [],
+      'Santa María': [],
+    },
+    'Neuquén': {
+      'San Patricio del Chañar': [],
+      'Añelo': [],
+    },
+    'Río Negro': {
+      'Alto Valle': [],
+      'Valle Medio': [],
+    },
+    'Patagonia': {},
+    'Córdoba': {
+      'Colonia Caroya': [],
+      'Traslasierra': [],
+    },
+    'Buenos Aires': {
+      'Sierra de la Ventana': [],
+      'Médanos': [],
+    },
   };
 
   const showToast = () => {
@@ -77,7 +118,9 @@ export default function App() {
   };
 
   const handleInput = (field, value) => {
-    if (field === 'region') {
+    if (field === 'provincia') {
+      setForm({ ...form, provincia: value, region: '', subregion: '' });
+    } else if (field === 'region') {
       setForm({ ...form, region: value, subregion: '' });
     } else {
       setForm({ ...form, [field]: value });
@@ -88,8 +131,7 @@ export default function App() {
 
   const saveWine = async (probado) => {
     if (!isFormValid) return;
-    const wine = { ...form, probado, rating: 0, comentario: '', user_id: user.id };
-    if (probado) {
+    const wine = { ...form, probado, rating: 0, comentario: '', user_id: user.id };    if (probado) {
       setPendingWine(wine);
       setShowRating(true);
     } else {
@@ -327,7 +369,7 @@ export default function App() {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-medium" style={{ color: '#4A4A4A' }}>{wine.nombre}</h3>
-                        <p className="text-sm mt-1" style={{ color: '#A4A4A4' }}>{[wine.bodega, wine.cosecha, wine.uva, wine.region, wine.subregion].filter(Boolean).join(' · ') || 'Sin detalles'}</p>
+                        <p className="text-sm mt-1" style={{ color: '#A4A4A4' }}>{[wine.bodega, wine.cosecha, wine.uva, wine.provincia, wine.region, wine.subregion].filter(Boolean).join(' · ') || 'Sin detalles'}</p>
                         {wine.probado && wine.rating > 0 && (
                           <div className="flex gap-0.5 mt-2">
                             {[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-4 h-4" fill={s <= wine.rating ? '#722F37' : 'none'} style={{ color: '#722F37' }} />)}
